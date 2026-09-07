@@ -1,26 +1,133 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-instrument-serif);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-instrument-serif);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* Tokens propios de la identidad de El Bosque */
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-stripe-a: var(--stripe-a);
+  --color-stripe-b: var(--stripe-b);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * Identidad visual "El Bosque Hamburguesería": paleta oscura y cálida,
+ * acentos dorados, tipografía editorial (serif itálica + mono trackeado),
+ * esquinas rectas en toda la interfaz. Un solo tema — no hay modo claro.
+ */
+:root,
+.dark {
+  --background: #0c0f0d;
+  --foreground: #eae6dc;
+  --card: #0f1310;
+  --card-foreground: #eae6dc;
+  --popover: #0f1310;
+  --popover-foreground: #eae6dc;
+  --primary: #e8b93b;
+  --primary-foreground: #0c0f0d;
+  --secondary: #171b18;
+  --secondary-foreground: #eae6dc;
+  --muted: #11150f;
+  --muted-foreground: rgba(234, 230, 220, 0.6);
+  --accent: #11150f;
+  --accent-foreground: #e8b93b;
+  --destructive: #b3492f;
+  --destructive-foreground: #f5ece7;
+  --border: rgba(234, 230, 220, 0.14);
+  --input: rgba(234, 230, 220, 0.18);
+  --ring: #e8b93b;
+  --chart-1: #e8b93b;
+  --chart-2: #f3cd63;
+  --chart-3: rgba(234, 230, 220, 0.6);
+  --chart-4: rgba(234, 230, 220, 0.35);
+  --chart-5: #b3492f;
+  --radius: 0px;
+  --sidebar: #0c0f0d;
+  --sidebar-foreground: #eae6dc;
+  --sidebar-primary: #e8b93b;
+  --sidebar-primary-foreground: #0c0f0d;
+  --sidebar-accent: #11150f;
+  --sidebar-accent-foreground: #e8b93b;
+  --sidebar-border: rgba(234, 230, 220, 0.12);
+  --sidebar-ring: #e8b93b;
+
+  --gold: #e8b93b;
+  --gold-light: #f3cd63;
+  --stripe-a: #171b18;
+  --stripe-b: #121613;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .bg-stripe-placeholder {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--stripe-a) 0 12px,
+      var(--stripe-b) 12px 24px
+    );
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
 }
