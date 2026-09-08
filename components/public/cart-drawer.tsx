@@ -1,10 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Minus, Plus, X } from "lucide-react"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { formatCOP } from "@/lib/format/currency"
 import { cartLines, cartSubtotal, useCartStore } from "@/store/cart-store"
+import type { ConfiguracionPublica } from "@/lib/data/configuracion"
 
 export function CartDrawer() {
   const router = useRouter()
@@ -17,10 +19,19 @@ export function CartDrawer() {
   const decrement = useCartStore((s) => s.decrement)
   const remove = useCartStore((s) => s.remove)
 
+  const [configuracion, setConfiguracion] = useState<ConfiguracionPublica | null>(null)
+
+  useEffect(() => {
+    fetch("/api/configuracion")
+      .then((r) => r.json())
+      .then(setConfiguracion)
+      .catch(() => {})
+  }, [])
+
   const lines = cartLines(items)
   const subtotal = cartSubtotal(items)
   const esDomicilio = tipoEntrega === "domicilio"
-  const costoEnvioEstimado = 6000
+  const costoEnvioEstimado = configuracion?.costoDomicilioDefault ?? 0
   const total = subtotal + (esDomicilio && subtotal > 0 ? costoEnvioEstimado : 0)
 
   return (

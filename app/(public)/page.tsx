@@ -19,6 +19,9 @@ export default async function HomePage() {
   const hamburguesas = categorias.find((c) => c.slug === "hamburguesas")
   const combos = categorias.find((c) => c.slug === "combos")
   const acompanamientos = categorias.find((c) => c.slug === "acompanamientos-y-bebidas")
+  const otrasCategorias = categorias.filter(
+    (c) => !["hamburguesas", "combos", "acompanamientos-y-bebidas"].includes(c.slug)
+  )
   const horario = (configuracion.horario_atencion ?? {}) as Record<string, string>
 
   return (
@@ -96,6 +99,22 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      {otrasCategorias.map((categoria) => (
+        <section
+          key={categoria.id}
+          className="mx-auto max-w-[1240px] px-5 pt-10 sm:px-7"
+        >
+          <h3 className="border-b border-border pb-4 font-serif text-[clamp(24px,3vw,36px)] leading-none">
+            {categoria.nombre}
+          </h3>
+          <div className="grid grid-cols-1 gap-6 pt-7 sm:grid-cols-2">
+            {categoria.productos.map((producto) => (
+              <ProductCard key={producto.id} producto={producto} />
+            ))}
+          </div>
+        </section>
+      ))}
 
       {/* Combos */}
       {combos ? (
