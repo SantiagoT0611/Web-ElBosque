@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ExternalLink } from "lucide-react"
 import { getMenuPublico } from "@/lib/data/menu"
 import { getConfiguracion } from "@/lib/data/configuracion"
 import { ProductCard } from "@/components/public/product-card"
@@ -44,8 +45,7 @@ export default async function HomePage() {
               <em className="font-serif text-primary italic">merece la espera</em>
             </h1>
             <p className="mx-auto mt-4 max-w-[52ch] text-base leading-relaxed text-muted-foreground">
-              Carne molida cada mañana, pan horneado en casa y fuego de carbón de encino. Arma tu
-              pedido y elige cómo lo quieres recibir.
+              Somos una propuesta artesanal de cocina artesanal, nos gusta brindarte nuestro mejor sabor.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2.5">
               <Link
@@ -76,7 +76,7 @@ export default async function HomePage() {
               </h2>
             </div>
             <span className="text-[13px] text-muted-foreground">
-              Todas con papas rústicas incluidas
+              El bosque
             </span>
           </div>
           <div className="grid grid-cols-1 gap-6 pt-7 sm:grid-cols-2">
@@ -138,9 +138,22 @@ export default async function HomePage() {
           {configuracion.direccion}
         </h2>
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-          <div className="flex min-h-[280px] items-center justify-center bg-stripe-placeholder p-5 text-center font-mono text-[10px] tracking-[0.14em] text-primary/60">
-            MAPA — {configuracion.direccion}
-          </div>
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              `${configuracion.direccion}, Colombia`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex min-h-[280px] items-center justify-center bg-stripe-placeholder p-5 text-center transition-colors hover:bg-stripe-placeholder/70"
+          >
+            <span className="flex flex-col items-center gap-2.5 font-mono text-[10px] tracking-[0.14em] text-primary/60 transition-colors group-hover:text-primary">
+              <ExternalLink className="size-4" />
+              MAPA — {configuracion.direccion}
+              <span className="text-[9px] tracking-[0.1em] text-muted-foreground">
+                Abrir en Google Maps
+              </span>
+            </span>
+          </a>
           <div className="flex flex-col border border-border">
             <div className="border-b border-border px-6 py-5">
               <div className="mb-2 font-mono text-[10px] tracking-[0.2em] text-primary">HORARIOS</div>
