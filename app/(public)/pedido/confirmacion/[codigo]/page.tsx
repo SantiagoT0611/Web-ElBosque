@@ -23,7 +23,7 @@ export default async function ConfirmacionPage(
         </h1>
         <p className="mx-auto mt-3.5 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
           {pedido.tipo_entrega === "domicilio"
-            ? "Te avisamos por WhatsApp cuando el pedido salga. Guarda este enlace para ver el estado."
+            ? "Guarda este enlace para ver en tiempo real cuándo sale tu pedido a domicilio."
             : "Pregunta por tu número de pedido en el mostrador. Guarda este enlace para ver el estado."}
         </p>
       </div>

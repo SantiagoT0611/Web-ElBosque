@@ -23,6 +23,7 @@ export type ConfiguracionPublica = {
   direccion: string | null
   telefono: string | null
   horarioAtencion: Record<string, string>
+  redesSociales: Record<string, string>
   costoDomicilioDefault: number
   banco: {
     nombre: string | null
@@ -41,6 +42,7 @@ export async function getConfiguracionPublica(): Promise<ConfiguracionPublica> {
     direccion: config.direccion,
     telefono: config.telefono,
     horarioAtencion: (config.horario_atencion ?? {}) as Record<string, string>,
+    redesSociales: (config.redes_sociales ?? {}) as Record<string, string>,
     costoDomicilioDefault: config.costo_domicilio_default,
     banco: {
       nombre: config.banco_nombre,

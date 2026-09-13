@@ -4,6 +4,8 @@ import { getPedidoAdminPorId } from "@/lib/data/pedidos-admin"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { OrderStatusStepper } from "@/components/public/order-status-stepper"
 import { PedidoAcciones } from "@/components/admin/pedido-acciones"
+import { DevolucionDialog } from "@/components/admin/devolucion-dialog"
+import { RealtimeRefresh } from "@/components/admin/realtime-refresh"
 import { formatCOP } from "@/lib/format/currency"
 
 export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pedidos/[id]">) {
@@ -17,6 +19,7 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
 
   return (
     <div className="p-8">
+      <RealtimeRefresh />
       <Link
         href="/admin/pedidos"
         className="mb-6 inline-block font-mono text-[11px] tracking-[0.16em] text-muted-foreground transition-colors hover:text-primary"
@@ -31,7 +34,14 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
             {new Date(pedido.created_at).toLocaleString("es-CO")}
           </div>
         </div>
-        <StatusBadge estado={pedido.estado_pedido} />
+        <div className="flex items-center gap-2">
+          <StatusBadge estado={pedido.estado_pedido} />
+          {pedido.devoluciones ? (
+            <span className="border border-destructive bg-transparent px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] text-destructive uppercase">
+              Devuelto
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_1.1fr]">
@@ -90,6 +100,15 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
                 <dt className="text-muted-foreground">Método de pago</dt>
                 <dd className="capitalize">{pedido.metodo_pago}</dd>
               </div>
+              {pedido.metodo_pago === "efectivo" && pedido.efectivo_paga_con != null ? (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Paga con</dt>
+                  <dd className="font-mono">
+                    {formatCOP(pedido.efectivo_paga_con)} · cambio{" "}
+                    {formatCOP(pedido.efectivo_paga_con - pedido.total)}
+                  </dd>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Estado del pago</dt>
                 <dd className="uppercase">{pedido.estado_pago.replace("_", " ")}</dd>
@@ -123,6 +142,12 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
                 <span>Domicilio</span>
                 <span className="font-mono">{formatCOP(pedido.costo_domicilio)}</span>
               </div>
+              {pedido.propina > 0 ? (
+                <div className="flex justify-between">
+                  <span>Propina</span>
+                  <span className="font-mono">{formatCOP(pedido.propina)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between text-base text-foreground">
                 <span className="font-serif text-lg">Total</span>
                 <span className="font-mono text-lg text-primary">{formatCOP(pedido.total)}</span>
@@ -160,6 +185,18 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
             <OrderStatusStepper estado={pedido.estado_pedido} tipoEntrega={pedido.tipo_entrega} />
           </div>
           <PedidoAcciones pedido={pedido} />
+          {pedido.estado_pedido === "entregado" ? (
+            <div className="border border-border p-6">
+              <div className="mb-3 font-mono text-[10px] tracking-[0.2em] text-primary uppercase">
+                Devolución
+              </div>
+              {pedido.devoluciones ? (
+                <p className="text-sm text-muted-foreground">{pedido.devoluciones.motivo}</p>
+              ) : (
+                <DevolucionDialog pedidoId={pedido.id} />
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

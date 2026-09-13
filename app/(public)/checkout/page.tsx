@@ -13,6 +13,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import type { ConfiguracionPublica } from "@/lib/data/configuracion"
+import { getEstadoLocal } from "@/lib/format/horario"
+import { LocalStatusBadge } from "@/components/public/local-status-badge"
+
+const DENOMINACIONES = [10000, 20000, 50000, 100000] as const
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -55,15 +59,27 @@ export default function CheckoutPage() {
 
   const tipoEntrega = form.watch("tipo_entrega")
   const metodoPago = form.watch("metodo_pago")
+  const efectivoPagaCon = form.watch("efectivo_paga_con")
+  const quierePropina = form.watch("quiere_propina")
   const esDomicilio = tipoEntrega === "domicilio"
+  const esEfectivo = metodoPago === "efectivo"
   const lines = cartLines(items)
   const subtotal = cartSubtotal(items)
   const costoDomicilio = configuracion?.costoDomicilioDefault ?? 0
-  const total = subtotal + (esDomicilio ? costoDomicilio : 0)
+  const propina = quierePropina ? Math.round(subtotal * 0.1) : 0
+  const total = subtotal + (esDomicilio ? costoDomicilio : 0) + propina
+  const estadoLocal = configuracion ? getEstadoLocal(configuracion.horarioAtencion) : null
 
   function elegirTipoEntrega(tipo: "domicilio" | "recoger") {
     form.setValue("tipo_entrega", tipo, { shouldValidate: true })
     setTipoEntregaStore(tipo)
+  }
+
+  function elegirMetodoPago(metodo: "efectivo" | "transferencia") {
+    form.setValue("metodo_pago", metodo, { shouldValidate: true })
+    if (metodo === "transferencia") {
+      form.setValue("efectivo_paga_con", undefined, { shouldValidate: true })
+    }
   }
 
   async function onSubmit(values: CheckoutFormInput) {
@@ -121,9 +137,15 @@ export default function CheckoutPage() {
         <span>—</span>
         <span>3 CONFIRMACIÓN</span>
       </div>
-      <h1 className="mb-8 font-serif text-[clamp(28px,4.4vw,46px)] leading-[1.03]">
+      <h1 className="mb-4 font-serif text-[clamp(28px,4.4vw,46px)] leading-[1.03]">
         {esDomicilio ? "¿A dónde la llevamos?" : "¿A qué hora la recoges?"}
       </h1>
+
+      {configuracion ? (
+        <div className="mb-8">
+          <LocalStatusBadge horario={configuracion.horarioAtencion} />
+        </div>
+      ) : null}
 
       <form
         onSubmit={form.handleSubmit(onSubmit)}
@@ -233,7 +255,7 @@ export default function CheckoutPage() {
                 <button
                   key={metodo}
                   type="button"
-                  onClick={() => form.setValue("metodo_pago", metodo, { shouldValidate: true })}
+                  onClick={() => elegirMetodoPago(metodo)}
                   className={
                     "p-3 text-center capitalize transition-colors " +
                     (metodoPago === metodo
@@ -248,6 +270,45 @@ export default function CheckoutPage() {
               ))}
             </div>
           </div>
+
+          {esEfectivo ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="efectivo_paga_con">¿Con qué billete vas a pagar?</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {DENOMINACIONES.map((denom) => {
+                  const disabled = denom < total
+                  return (
+                    <button
+                      key={denom}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() =>
+                        form.setValue("efectivo_paga_con", denom, { shouldValidate: true })
+                      }
+                      className={
+                        "p-3 text-center font-mono text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-30 " +
+                        (efectivoPagaCon === denom
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border text-muted-foreground")
+                      }
+                    >
+                      {formatCOP(denom)}
+                    </button>
+                  )
+                })}
+              </div>
+              {form.formState.errors.efectivo_paga_con ? (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.efectivo_paga_con.message}
+                </p>
+              ) : null}
+              {efectivoPagaCon && efectivoPagaCon >= total ? (
+                <p className="text-xs text-primary">
+                  Te devolvemos {formatCOP(efectivoPagaCon - total)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-4 border border-primary/30 bg-card p-6 sm:p-7">
@@ -283,14 +344,26 @@ export default function CheckoutPage() {
               <span>{esDomicilio ? "Envío a domicilio" : "Recoges en tienda"}</span>
               <span className="font-mono">{esDomicilio ? formatCOP(costoDomicilio) : "Sin costo"}</span>
             </div>
+            <label className="flex cursor-pointer items-center justify-between gap-3 pt-1">
+              <span className="flex items-center gap-2">
+                <input type="checkbox" {...form.register("quiere_propina")} className="size-4" />
+                Agregar propina voluntaria (10%)
+              </span>
+              {quierePropina ? <span className="font-mono">{formatCOP(propina)}</span> : null}
+            </label>
           </div>
           <div className="flex items-baseline justify-between border-t border-primary/30 pt-3.5">
             <span className="font-serif text-xl">Total</span>
             <span className="font-mono text-2xl text-primary">{formatCOP(total)}</span>
           </div>
+          {estadoLocal && !estadoLocal.abierto ? (
+            <p className="text-center text-xs text-destructive">
+              El local está cerrado ahora mismo. {estadoLocal.mensaje}.
+            </p>
+          ) : null}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !!(estadoLocal && !estadoLocal.abierto)}
             className="bg-primary p-4 text-center font-display text-xs font-bold tracking-[0.12em] uppercase text-primary-foreground transition-colors hover:bg-gold-light disabled:opacity-50"
           >
             {submitting ? "Enviando..." : "Confirmar pedido"}

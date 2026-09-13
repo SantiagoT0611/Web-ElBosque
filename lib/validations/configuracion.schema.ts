@@ -5,6 +5,7 @@ export const configuracionSchema = z.object({
   direccion: z.string().trim().max(200).optional().or(z.literal("")),
   telefono: z.string().trim().max(30).optional().or(z.literal("")),
   horario_atencion: z.record(z.string(), z.string()),
+  redes_sociales: z.record(z.string(), z.string()).optional(),
   costo_domicilio_default: z
     .number()
     .int({ error: "Debe ser un número entero de pesos." })

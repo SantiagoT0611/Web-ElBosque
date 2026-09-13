@@ -11,14 +11,22 @@ import { ImageUploadField } from "@/components/shared/image-upload-field"
 
 const DIAS_HORARIO: { key: string; label: string }[] = [
   { key: "lunes_jueves", label: "Lunes a jueves" },
-  { key: "viernes_sabado", label: "Viernes y sábado" },
+  { key: "viernes", label: "Viernes" },
+  { key: "sabado", label: "Sábado" },
   { key: "domingo", label: "Domingo" },
+]
+
+const REDES: { key: string; label: string; placeholder: string }[] = [
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/elbosque" },
+  { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/elbosque" },
+  { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@elbosque" },
 ]
 
 export default function AdminConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [panoramicas, setPanoramicas] = useState<string[]>([])
 
   const form = useForm<ConfiguracionInput>({
     resolver: zodResolver(configuracionSchema),
@@ -27,6 +35,7 @@ export default function AdminConfiguracionPage() {
       direccion: "",
       telefono: "",
       horario_atencion: {},
+      redes_sociales: {},
       costo_domicilio_default: 0,
       banco_nombre: "",
       banco_tipo_cuenta: "",
@@ -45,6 +54,7 @@ export default function AdminConfiguracionPage() {
           direccion: configuracion.direccion ?? "",
           telefono: configuracion.telefono ?? "",
           horario_atencion: configuracion.horario_atencion ?? {},
+          redes_sociales: configuracion.redes_sociales ?? {},
           costo_domicilio_default: configuracion.costo_domicilio_default,
           banco_nombre: configuracion.banco_nombre ?? "",
           banco_tipo_cuenta: configuracion.banco_tipo_cuenta ?? "",
@@ -53,6 +63,7 @@ export default function AdminConfiguracionPage() {
           banco_documento: configuracion.banco_documento ?? "",
         })
         setQrUrl(configuracion.qr_transferencia_url)
+        setPanoramicas(configuracion.fotos_panoramicas ?? [])
         setLoading(false)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,7 +96,30 @@ export default function AdminConfiguracionPage() {
     toast.success("Código QR actualizado.")
   }
 
+  async function guardarPanoramicas(next: string[]) {
+    setPanoramicas(next)
+    await fetch("/api/admin/configuracion", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fotos_panoramicas: next }),
+    })
+    toast.success("Fotos de portada actualizadas.")
+  }
+
+  function handlePanoramicaChange(indice: number, url: string) {
+    const siguiente = [...panoramicas, "", "", "", ""].slice(0, 4)
+    siguiente[indice] = url
+    guardarPanoramicas(siguiente.filter(Boolean))
+  }
+
+  function quitarPanoramica(indice: number) {
+    const siguiente = [...panoramicas, "", "", "", ""].slice(0, 4)
+    siguiente[indice] = ""
+    guardarPanoramicas(siguiente.filter(Boolean))
+  }
+
   const horario = form.watch("horario_atencion")
+  const redes = form.watch("redes_sociales")
 
   if (loading) {
     return <div className="p-8 text-muted-foreground">Cargando...</div>
@@ -153,6 +187,30 @@ export default function AdminConfiguracionPage() {
 
         <div className="border border-border p-6">
           <div className="mb-4 font-mono text-[10px] tracking-[0.2em] text-primary uppercase">
+            Redes sociales
+          </div>
+          <div className="flex flex-col gap-3">
+            {REDES.map((red) => (
+              <div key={red.key} className="flex flex-col gap-1.5">
+                <Label htmlFor={`red-${red.key}`}>{red.label}</Label>
+                <Input
+                  id={`red-${red.key}`}
+                  placeholder={red.placeholder}
+                  value={redes?.[red.key] ?? ""}
+                  onChange={(e) =>
+                    form.setValue("redes_sociales", {
+                      ...form.getValues("redes_sociales"),
+                      [red.key]: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="border border-border p-6">
+          <div className="mb-4 font-mono text-[10px] tracking-[0.2em] text-primary uppercase">
             Pago por transferencia
           </div>
           <div className="flex flex-col gap-4">
@@ -183,7 +241,39 @@ export default function AdminConfiguracionPage() {
               value={qrUrl}
               onChange={handleQrChange}
               label="Código QR para transferencias"
+              hint="Cuadrada, mínimo 500×500 px — para que escanee bien desde el celular."
             />
+          </div>
+        </div>
+
+        <div className="border border-border p-6">
+          <div className="mb-1 font-mono text-[10px] tracking-[0.2em] text-primary uppercase">
+            Fotos de portada (carrusel)
+          </div>
+          <p className="mb-4 text-[12px] text-muted-foreground">
+            Hasta 4 fotos. Con más de una, se van alternando solas en el inicio.
+          </p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {[0, 1, 2, 3].map((indice) => (
+              <div key={indice} className="flex flex-col gap-1.5">
+                <ImageUploadField
+                  bucket="configuracion"
+                  value={panoramicas[indice] ?? null}
+                  onChange={(url) => handlePanoramicaChange(indice, url)}
+                  label={`Foto ${indice + 1}`}
+                  hint="Horizontal panorámica, mínimo 1600×500 px."
+                />
+                {panoramicas[indice] ? (
+                  <button
+                    type="button"
+                    onClick={() => quitarPanoramica(indice)}
+                    className="self-start font-mono text-[10px] tracking-[0.1em] text-destructive uppercase hover:underline"
+                  >
+                    Quitar esta foto
+                  </button>
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
 

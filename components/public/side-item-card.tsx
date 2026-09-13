@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { formatCOP } from "@/lib/format/currency"
 import { useCartStore } from "@/store/cart-store"
 import type { Tables } from "@/lib/types/database.types"
@@ -10,8 +11,12 @@ export function SideItemCard({ producto }: { producto: Tables<"productos"> }) {
 
   return (
     <div className="flex items-center gap-4 border border-border bg-card p-3.5">
-      <div className="flex size-[84px] shrink-0 items-center justify-center bg-stripe-placeholder p-1 text-center font-mono text-[8px] text-primary/50">
-        FOTO
+      <div className="relative flex size-[84px] shrink-0 items-center justify-center overflow-hidden bg-stripe-placeholder p-1 text-center font-mono text-[8px] text-primary/50">
+        {producto.imagen_url ? (
+          <Image src={producto.imagen_url} alt={producto.nombre} fill className="object-cover" />
+        ) : (
+          "FOTO"
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2.5">

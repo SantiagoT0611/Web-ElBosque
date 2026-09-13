@@ -122,10 +122,12 @@ export type Database = {
           banco_titular: string | null
           costo_domicilio_default: number
           direccion: string | null
+          fotos_panoramicas: string[]
           horario_atencion: Json
           id: number
           nombre_restaurante: string
           qr_transferencia_url: string | null
+          redes_sociales: Json
           telefono: string | null
           updated_at: string
         }
@@ -137,10 +139,12 @@ export type Database = {
           banco_titular?: string | null
           costo_domicilio_default?: number
           direccion?: string | null
+          fotos_panoramicas?: string[]
           horario_atencion?: Json
           id?: number
           nombre_restaurante?: string
           qr_transferencia_url?: string | null
+          redes_sociales?: Json
           telefono?: string | null
           updated_at?: string
         }
@@ -152,10 +156,12 @@ export type Database = {
           banco_titular?: string | null
           costo_domicilio_default?: number
           direccion?: string | null
+          fotos_panoramicas?: string[]
           horario_atencion?: Json
           id?: number
           nombre_restaurante?: string
           qr_transferencia_url?: string | null
+          redes_sociales?: Json
           telefono?: string | null
           updated_at?: string
         }
@@ -202,6 +208,45 @@ export type Database = {
             columns: ["producto_id"]
             isOneToOne: false
             referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devoluciones: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string
+          pedido_id: string
+          registrado_por: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo: string
+          pedido_id: string
+          registrado_por?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string
+          pedido_id?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoluciones_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: true
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devoluciones_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
             referencedColumns: ["id"]
           },
         ]
@@ -269,11 +314,13 @@ export type Database = {
           codigo_seguimiento: string
           costo_domicilio: number
           created_at: string
+          efectivo_paga_con: number | null
           estado_pago: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido: Database["public"]["Enums"]["estado_pedido_enum"]
           id: string
           metodo_pago: Database["public"]["Enums"]["metodo_pago_enum"]
           pago_reportado_cliente_at: string | null
+          propina: number
           subtotal: number
           tipo_entrega: Database["public"]["Enums"]["tipo_entrega_enum"]
           total: number
@@ -290,11 +337,13 @@ export type Database = {
           codigo_seguimiento?: string
           costo_domicilio?: number
           created_at?: string
+          efectivo_paga_con?: number | null
           estado_pago: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido?: Database["public"]["Enums"]["estado_pedido_enum"]
           id?: string
           metodo_pago: Database["public"]["Enums"]["metodo_pago_enum"]
           pago_reportado_cliente_at?: string | null
+          propina?: number
           subtotal: number
           tipo_entrega: Database["public"]["Enums"]["tipo_entrega_enum"]
           total: number
@@ -311,11 +360,13 @@ export type Database = {
           codigo_seguimiento?: string
           costo_domicilio?: number
           created_at?: string
+          efectivo_paga_con?: number | null
           estado_pago?: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido?: Database["public"]["Enums"]["estado_pedido_enum"]
           id?: string
           metodo_pago?: Database["public"]["Enums"]["metodo_pago_enum"]
           pago_reportado_cliente_at?: string | null
+          propina?: number
           subtotal?: number
           tipo_entrega?: Database["public"]["Enums"]["tipo_entrega_enum"]
           total?: number
@@ -369,6 +420,54 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resenas: {
+        Row: {
+          aprobado: boolean
+          calificacion: number
+          cliente_nombre: string
+          comentario: string
+          created_at: string
+          id: string
+          pedido_id: string
+          producto_id: string | null
+        }
+        Insert: {
+          aprobado?: boolean
+          calificacion: number
+          cliente_nombre: string
+          comentario: string
+          created_at?: string
+          id?: string
+          pedido_id: string
+          producto_id?: string | null
+        }
+        Update: {
+          aprobado?: boolean
+          calificacion?: number
+          cliente_nombre?: string
+          comentario?: string
+          created_at?: string
+          id?: string
+          pedido_id?: string
+          producto_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resenas_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resenas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
             referencedColumns: ["id"]
           },
         ]

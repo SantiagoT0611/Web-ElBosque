@@ -104,6 +104,12 @@ export async function PedidoResumen({ pedido }: { pedido: PedidoCompleto }) {
               {pedido.tipo_entrega === "domicilio" ? formatCOP(pedido.costo_domicilio) : "Sin costo"}
             </span>
           </div>
+          {pedido.propina > 0 ? (
+            <div className="flex justify-between">
+              <span>Propina</span>
+              <span className="font-mono">{formatCOP(pedido.propina)}</span>
+            </div>
+          ) : null}
         </div>
         <div className="flex items-baseline justify-between border-t border-primary/30 pt-3.5">
           <span className="font-serif text-xl">Total</span>
@@ -131,6 +137,15 @@ export async function PedidoResumen({ pedido }: { pedido: PedidoCompleto }) {
             <span>Método de pago</span>
             <span className="text-foreground capitalize">{pedido.metodo_pago}</span>
           </div>
+          {pedido.metodo_pago === "efectivo" && pedido.efectivo_paga_con != null ? (
+            <div className="flex justify-between">
+              <span>Paga con</span>
+              <span className="font-mono text-foreground">
+                {formatCOP(pedido.efectivo_paga_con)} · cambio{" "}
+                {formatCOP(pedido.efectivo_paga_con - pedido.total)}
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

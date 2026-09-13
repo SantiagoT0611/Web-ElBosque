@@ -31,14 +31,16 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/prod
   return NextResponse.json({ producto: data })
 }
 
-/** Archivado suave (disponible=false): conserva el histórico en pedidos pasados. */
+/** Elimina el producto. Los pedidos y reseñas pasados guardan su propio
+ * snapshot (nombre/precio) y su producto_id queda en null (on delete set
+ * null) — el histórico no se ve afectado. */
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/admin/productos/[id]">) {
   const session = await getAdminSession()
   if (!session) return NextResponse.json({ error: "No autenticado." }, { status: 401 })
 
   const { id } = await ctx.params
   const supabase = createAdminClient()
-  const { error } = await supabase.from("productos").update({ disponible: false }).eq("id", id)
+  const { error } = await supabase.from("productos").delete().eq("id", id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

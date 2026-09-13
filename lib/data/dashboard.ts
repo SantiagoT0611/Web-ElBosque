@@ -1,11 +1,6 @@
 import "server-only"
 import { createAdminClient } from "@/lib/supabase/admin"
-
-function inicioDeHoyISO(): string {
-  const inicio = new Date()
-  inicio.setHours(0, 0, 0, 0)
-  return inicio.toISOString()
-}
+import { getInicioDeHoyBogotaISO } from "@/lib/format/horario"
 
 export async function getResumenDashboard() {
   const supabase = createAdminClient()
@@ -13,12 +8,25 @@ export async function getResumenDashboard() {
   const { data: pedidosHoy, error } = await supabase
     .from("pedidos")
     .select("*, detalle_pedido(producto_nombre, cantidad)")
-    .gte("created_at", inicioDeHoyISO())
+    .gte("created_at", getInicioDeHoyBogotaISO())
 
   if (error) throw new Error(error.message)
 
   const pedidos = pedidosHoy ?? []
-  const noCancelados = pedidos.filter((p) => p.estado_pedido !== "cancelado")
+
+  const idsDevueltos = new Set<string>()
+  if (pedidos.length > 0) {
+    const { data: devolucionesHoy, error: devolucionesError } = await supabase
+      .from("devoluciones")
+      .select("pedido_id")
+      .in("pedido_id", pedidos.map((p) => p.id))
+
+    if (devolucionesError) throw new Error(devolucionesError.message)
+    for (const d of devolucionesHoy ?? []) idsDevueltos.add(d.pedido_id)
+  }
+  const noCancelados = pedidos.filter(
+    (p) => p.estado_pedido !== "cancelado" && !idsDevueltos.has(p.id)
+  )
 
   const ventasHoy = noCancelados.reduce((acc, p) => acc + p.total, 0)
   const pendientes = pedidos.filter((p) => p.estado_pedido === "pendiente").length

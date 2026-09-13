@@ -9,11 +9,15 @@ export function ImageUploadField({
   value,
   onChange,
   label,
+  hint,
 }: {
   bucket: "productos" | "configuracion"
   value: string | null
   onChange: (url: string) => void
   label: string
+  /** Resolución/proporción recomendada para este campo puntual (ej. "Horizontal,
+   * mínimo 1200×800 px") — cada lugar donde se usa esta imagen recorta distinto. */
+  hint?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -63,6 +67,7 @@ export function ImageUploadField({
             {uploading ? "Subiendo..." : value ? "Cambiar imagen" : "Subir imagen"}
           </button>
           <span className="text-[11px] text-muted-foreground/70">JPG, PNG o WEBP · máx. 5 MB</span>
+          {hint ? <span className="text-[11px] text-muted-foreground/70">{hint}</span> : null}
         </div>
         <input
           ref={inputRef}

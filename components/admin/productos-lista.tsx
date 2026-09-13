@@ -95,9 +95,13 @@ export function ProductosLista({
     })
   }
 
-  async function archivar(id: string) {
-    await fetch(`/api/admin/productos/${id}`, { method: "DELETE" })
-    toast.success("Producto archivado.")
+  async function eliminar(id: string) {
+    const res = await fetch(`/api/admin/productos/${id}`, { method: "DELETE" })
+    if (!res.ok) {
+      toast.error((await res.json()).error ?? "No se pudo eliminar el producto.")
+      return
+    }
+    toast.success("Producto eliminado.")
     router.refresh()
   }
 
@@ -182,19 +186,20 @@ export function ProductosLista({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button className="border border-destructive/40 px-3.5 py-2 font-mono text-[10px] tracking-[0.1em] text-destructive uppercase transition-colors hover:bg-destructive/10">
-                    Archivar
+                    Eliminar
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>¿Archivar {producto.nombre}?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Eliminar {producto.nombre}?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Dejará de mostrarse en el menú público. Los pedidos pasados no se ven afectados.
+                      Se eliminará por completo y ya no aparecerá en Productos ni en la carta. Los
+                      pedidos y reseñas pasados no se ven afectados. Esta acción no se puede deshacer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => archivar(producto.id)}>Archivar</AlertDialogAction>
+                    <AlertDialogAction onClick={() => eliminar(producto.id)}>Eliminar</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>

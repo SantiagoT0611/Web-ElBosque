@@ -23,6 +23,8 @@ const baseCheckoutSchema = z.object({
   cliente_barrio: z.string().trim().max(80).optional().or(z.literal("")),
   cliente_referencia: z.string().trim().max(200).optional().or(z.literal("")),
   metodo_pago: z.enum(["efectivo", "transferencia"]),
+  efectivo_paga_con: z.number().int().positive().optional(),
+  quiere_propina: z.boolean().optional(),
   items: z.array(itemPedidoSchema).min(1, { error: "El carrito está vacío." }),
 })
 
@@ -36,7 +38,22 @@ function requiereDireccion(data: { tipo_entrega: string; cliente_direccion?: str
   }
 }
 
-export const crearPedidoSchema = baseCheckoutSchema.superRefine(requiereDireccion)
+function requiereMontoEfectivo(
+  data: { metodo_pago: string; efectivo_paga_con?: number },
+  ctx: z.RefinementCtx
+) {
+  if (data.metodo_pago === "efectivo" && !data.efectivo_paga_con) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["efectivo_paga_con"],
+      message: "Selecciona con qué billete vas a pagar.",
+    })
+  }
+}
+
+export const crearPedidoSchema = baseCheckoutSchema
+  .superRefine(requiereDireccion)
+  .superRefine(requiereMontoEfectivo)
 
 export type CrearPedidoInput = z.infer<typeof crearPedidoSchema>
 
@@ -44,5 +61,6 @@ export type CrearPedidoInput = z.infer<typeof crearPedidoSchema>
 export const checkoutFormSchema = baseCheckoutSchema
   .omit({ items: true })
   .superRefine(requiereDireccion)
+  .superRefine(requiereMontoEfectivo)
 
 export type CheckoutFormInput = z.infer<typeof checkoutFormSchema>

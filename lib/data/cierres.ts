@@ -1,20 +1,7 @@
 import "server-only"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Tables } from "@/lib/types/database.types"
-
-function fechaDeHoy(): string {
-  const hoy = new Date()
-  const yyyy = hoy.getFullYear()
-  const mm = String(hoy.getMonth() + 1).padStart(2, "0")
-  const dd = String(hoy.getDate()).padStart(2, "0")
-  return `${yyyy}-${mm}-${dd}`
-}
-
-function inicioDeHoyISO(): string {
-  const inicio = new Date()
-  inicio.setHours(0, 0, 0, 0)
-  return inicio.toISOString()
-}
+import { getFechaDeHoyBogota, getInicioDeHoyBogotaISO } from "@/lib/format/horario"
 
 export type ResumenCierre = {
   fecha: string
@@ -30,17 +17,31 @@ async function calcularResumenHoy(): Promise<ResumenCierre> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("pedidos")
-    .select("total, metodo_pago, estado_pedido")
-    .gte("created_at", inicioDeHoyISO())
+    .select("id, total, metodo_pago, estado_pedido")
+    .gte("created_at", getInicioDeHoyBogotaISO())
 
   if (error) throw new Error(error.message)
 
-  const pedidos = (data ?? []).filter((p) => p.estado_pedido !== "cancelado")
+  const todos = data ?? []
+  const idsDevueltos = new Set<string>()
+  if (todos.length > 0) {
+    const { data: devoluciones, error: devolucionesError } = await supabase
+      .from("devoluciones")
+      .select("pedido_id")
+      .in("pedido_id", todos.map((p) => p.id))
+
+    if (devolucionesError) throw new Error(devolucionesError.message)
+    for (const d of devoluciones ?? []) idsDevueltos.add(d.pedido_id)
+  }
+
+  const pedidos = todos.filter(
+    (p) => p.estado_pedido !== "cancelado" && !idsDevueltos.has(p.id)
+  )
   const efectivo = pedidos.filter((p) => p.metodo_pago === "efectivo")
   const transferencia = pedidos.filter((p) => p.metodo_pago === "transferencia")
 
   return {
-    fecha: fechaDeHoy(),
+    fecha: getFechaDeHoyBogota(),
     totalPedidos: pedidos.length,
     totalVentas: pedidos.reduce((acc, p) => acc + p.total, 0),
     totalEfectivo: efectivo.reduce((acc, p) => acc + p.total, 0),
@@ -54,7 +55,7 @@ export async function getResumenHoyYUltimoCierre() {
   const supabase = createAdminClient()
   const [resumen, { data: cierreHoy }] = await Promise.all([
     calcularResumenHoy(),
-    supabase.from("cierres_caja").select("*").eq("fecha", fechaDeHoy()).maybeSingle(),
+    supabase.from("cierres_caja").select("*").eq("fecha", getFechaDeHoyBogota()).maybeSingle(),
   ])
   return { resumen, yaCerradoHoy: !!cierreHoy }
 }

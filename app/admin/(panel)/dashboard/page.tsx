@@ -3,6 +3,7 @@ import { getResumenDashboard } from "@/lib/data/dashboard"
 import { getResumenHoyYUltimoCierre } from "@/lib/data/cierres"
 import { StatCard } from "@/components/admin/stat-card"
 import { CerrarDiaDialog } from "@/components/admin/cerrar-dia-dialog"
+import { RealtimeRefresh } from "@/components/admin/realtime-refresh"
 import { formatCOP } from "@/lib/format/currency"
 
 export default async function AdminDashboardPage() {
@@ -13,6 +14,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-8">
+      <RealtimeRefresh />
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
         <div>
           <span className="eyebrow">Panel interno</span>

@@ -105,6 +105,7 @@ export function ProductoForm({
         value={form.watch("imagen_url") || null}
         onChange={(url) => form.setValue("imagen_url", url)}
         label="Foto del producto"
+        hint="Cuadrada o casi cuadrada, mínimo 1000×1000 px — se recorta distinto según la sección del menú."
       />
 
       <div className="flex items-center justify-between border border-border px-4 py-3">

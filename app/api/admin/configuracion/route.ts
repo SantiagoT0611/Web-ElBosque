@@ -47,11 +47,24 @@ export async function PATCH(request: Request) {
   const session = await getAdminSession()
   if (!session) return NextResponse.json({ error: "No autenticado." }, { status: 401 })
 
-  const body = (await request.json()) as { qr_transferencia_url?: string }
+  const body = (await request.json()) as {
+    qr_transferencia_url?: string
+    fotos_panoramicas?: string[]
+  }
+  const updates: { qr_transferencia_url?: string | null; fotos_panoramicas?: string[] } = {}
+  if ("qr_transferencia_url" in body) updates.qr_transferencia_url = body.qr_transferencia_url || null
+  if ("fotos_panoramicas" in body) {
+    const fotos = (body.fotos_panoramicas ?? []).filter((url) => url)
+    if (fotos.length > 4) {
+      return NextResponse.json({ error: "Máximo 4 fotos de portada." }, { status: 400 })
+    }
+    updates.fotos_panoramicas = fotos
+  }
+
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("configuracion_restaurante")
-    .update({ qr_transferencia_url: body.qr_transferencia_url || null })
+    .update(updates)
     .eq("id", 1)
     .select()
     .single()

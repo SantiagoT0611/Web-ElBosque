@@ -14,6 +14,7 @@ import {
   CalendarCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  Star,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/admin/cierres", label: "Cierres", icon: CalendarCheck },
   { href: "/admin/productos", label: "Productos", icon: Beef },
   { href: "/admin/categorias", label: "Categorías", icon: Tags },
+  { href: "/admin/resenas", label: "Reseñas", icon: Star },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
 ]
 

@@ -1,20 +1,26 @@
 import Link from "next/link"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, MessageCircle, Star } from "lucide-react"
 import { getMenuPublico } from "@/lib/data/menu"
 import { getConfiguracion } from "@/lib/data/configuracion"
+import { getResenasAprobadas } from "@/lib/data/resenas"
+import { buildWhatsAppLink } from "@/lib/format/whatsapp"
 import { ProductCard } from "@/components/public/product-card"
 import { SideItemCard } from "@/components/public/side-item-card"
+import { LocalStatusBadge } from "@/components/public/local-status-badge"
+import { HeroCarousel } from "@/components/public/hero-carousel"
 
 const HORARIOS_LABEL: Record<string, string> = {
   lunes_jueves: "Lunes a jueves",
-  viernes_sabado: "Viernes y sábado",
+  viernes: "Viernes",
+  sabado: "Sábado",
   domingo: "Domingo",
 }
 
 export default async function HomePage() {
-  const [categorias, configuracion] = await Promise.all([
+  const [categorias, configuracion, resenas] = await Promise.all([
     getMenuPublico(),
     getConfiguracion(),
+    getResenasAprobadas(),
   ])
 
   const hamburguesas = categorias.find((c) => c.slug === "hamburguesas")
@@ -24,16 +30,23 @@ export default async function HomePage() {
     (c) => !["hamburguesas", "combos", "acompanamientos-y-bebidas"].includes(c.slug)
   )
   const horario = (configuracion.horario_atencion ?? {}) as Record<string, string>
+  const fotosPanoramicas = configuracion.fotos_panoramicas ?? []
+  const whatsappHref = buildWhatsAppLink(configuracion.telefono)
+  const direccionMaps = `${configuracion.direccion}, Colombia`
 
   return (
     <div>
       {/* Hero */}
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7">
         <div className="relative pt-12 pb-8 sm:pt-14">
-          <div className="flex h-[min(46vh,400px)] min-h-[220px] items-center justify-center bg-stripe-placeholder">
-            <span className="border border-primary/30 px-4 py-2.5 text-center font-mono text-[11px] tracking-[0.16em] text-primary/60">
-              FOTO PANORÁMICA — parrilla al carbón, humo, luz cálida
-            </span>
+          <div className="relative flex h-[min(46vh,400px)] min-h-[220px] items-center justify-center overflow-hidden bg-stripe-placeholder">
+            {fotosPanoramicas.length > 0 ? (
+              <HeroCarousel fotos={fotosPanoramicas} alt={configuracion.nombre_restaurante} />
+            ) : (
+              <span className="border border-primary/30 px-4 py-2.5 text-center font-mono text-[11px] tracking-[0.16em] text-primary/60">
+                FOTO PANORÁMICA — parrilla al carbón, humo, luz cálida
+              </span>
+            )}
           </div>
           <div className="relative mx-auto -mt-16 max-w-[780px] border border-primary/30 bg-background px-6 py-9 text-center sm:px-10">
             <span className="font-mono text-[10px] tracking-[0.32em] text-primary">
@@ -60,6 +73,9 @@ export default async function HomePage() {
               >
                 Cómo llegar
               </Link>
+            </div>
+            <div className="mt-5 flex justify-center">
+              <LocalStatusBadge horario={horario} />
             </div>
           </div>
         </div>
@@ -138,22 +154,24 @@ export default async function HomePage() {
           {configuracion.direccion}
         </h2>
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              `${configuracion.direccion}, Colombia`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex min-h-[280px] items-center justify-center bg-stripe-placeholder p-5 text-center transition-colors hover:bg-stripe-placeholder/70"
-          >
-            <span className="flex flex-col items-center gap-2.5 font-mono text-[10px] tracking-[0.14em] text-primary/60 transition-colors group-hover:text-primary">
+          <div className="group relative flex min-h-[280px] flex-col overflow-hidden border border-border bg-stripe-placeholder">
+            <iframe
+              src={`https://www.google.com/maps?q=${encodeURIComponent(direccionMaps)}&output=embed`}
+              title={`Mapa — ${configuracion.direccion}`}
+              loading="lazy"
+              className="pointer-events-none absolute inset-0 size-full grayscale contrast-125 brightness-90 transition-[filter] duration-300 group-hover:grayscale-0 group-hover:brightness-100"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent" />
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccionMaps)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative z-10 mt-auto flex items-center gap-2 px-5 py-4 font-mono text-[11px] tracking-[0.14em] text-primary transition-colors hover:text-gold-light"
+            >
               <ExternalLink className="size-4" />
-              MAPA — {configuracion.direccion}
-              <span className="text-[9px] tracking-[0.1em] text-muted-foreground">
-                Abrir en Google Maps
-              </span>
-            </span>
-          </a>
+              Abrir en Google Maps
+            </a>
+          </div>
           <div className="flex flex-col border border-border">
             <div className="border-b border-border px-6 py-5">
               <div className="mb-2 font-mono text-[10px] tracking-[0.2em] text-primary">HORARIOS</div>
@@ -170,6 +188,31 @@ export default async function HomePage() {
               <div className="text-[15px] leading-relaxed text-muted-foreground/90">
                 Teléfono · {configuracion.telefono}
               </div>
+              {whatsappHref ? (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] text-primary transition-colors hover:text-gold-light"
+                >
+                  <MessageCircle className="size-3.5" />
+                  Escríbenos por WhatsApp
+                </a>
+              ) : null}
+              {Object.entries((configuracion.redes_sociales ?? {}) as Record<string, string>)
+                .filter(([, url]) => url)
+                .map(([red, url]) => (
+                  <a
+                    key={red}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 flex items-center gap-1.5 text-[13px] text-primary transition-colors hover:text-gold-light"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    {red.charAt(0).toUpperCase() + red.slice(1)}
+                  </a>
+                ))}
             </div>
             <div className="flex flex-1 flex-col justify-center gap-2.5 px-6 py-5">
               <div className="font-mono text-[10px] tracking-[0.2em] text-primary">DOMICILIOS</div>
@@ -191,6 +234,39 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {resenas.length > 0 ? (
+        <section id="resenas" className="mx-auto max-w-[1240px] px-5 py-16 sm:px-7">
+          <span className="eyebrow">Reseñas</span>
+          <h2 className="mt-2.5 mb-7 font-serif text-[clamp(28px,4vw,46px)] leading-none">
+            Lo que dicen nuestros clientes
+          </h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {resenas.map((resena) => (
+              <div key={resena.id} className="flex flex-col gap-2.5 border border-border bg-card p-5">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={
+                        n <= resena.calificacion
+                          ? "size-3.5 fill-primary text-primary"
+                          : "size-3.5 text-muted-foreground"
+                      }
+                    />
+                  ))}
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  &ldquo;{resena.comentario}&rdquo;
+                </p>
+                <span className="font-mono text-[11px] tracking-[0.1em] text-primary uppercase">
+                  {resena.cliente_nombre}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-4 px-5 py-8 font-mono text-[11px] tracking-[0.14em] text-muted-foreground/60 uppercase sm:px-7">
         <span>

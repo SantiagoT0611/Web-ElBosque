@@ -1,9 +1,11 @@
 "use client"
 
 import Link from "next/link"
+import { MessageCircle } from "lucide-react"
 import { cartCount, useCartStore } from "@/store/cart-store"
 import { formatCOP } from "@/lib/format/currency"
 import { cartSubtotal } from "@/store/cart-store"
+import { buildWhatsAppLink } from "@/lib/format/whatsapp"
 
 const NAV_LINKS = [
   { href: "/#carta", label: "Carta" },
@@ -11,11 +13,12 @@ const NAV_LINKS = [
   { href: "/#local", label: "El local" },
 ]
 
-export function SiteHeader() {
+export function SiteHeader({ telefono }: { telefono?: string | null }) {
   const items = useCartStore((s) => s.items)
   const openCart = useCartStore((s) => s.open)
   const count = cartCount(items)
   const subtotal = cartSubtotal(items)
+  const whatsappHref = buildWhatsAppLink(telefono, "Hola, quiero hacer una pregunta sobre mi pedido.")
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
@@ -38,6 +41,17 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2.5">
+          {whatsappHref ? (
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Chatear por WhatsApp"
+              className="flex size-9 items-center justify-center border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            >
+              <MessageCircle className="size-4" />
+            </a>
+          ) : null}
           <Link
             href="/admin"
             className="border border-border px-4 py-2.5 font-mono text-[11px] tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary hover:text-primary"

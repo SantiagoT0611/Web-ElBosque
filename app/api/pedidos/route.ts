@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { crearPedidoSchema } from "@/lib/validations/pedido.schema"
+import { getConfiguracion } from "@/lib/data/configuracion"
+import { getEstadoLocal } from "@/lib/format/horario"
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -9,6 +11,16 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Datos de pedido inválidos.", detalles: parsed.error.flatten() },
+      { status: 400 }
+    )
+  }
+
+  const configuracion = await getConfiguracion()
+  const horario = (configuracion.horario_atencion ?? {}) as Record<string, string>
+  const estadoLocal = getEstadoLocal(horario)
+  if (!estadoLocal.abierto) {
+    return NextResponse.json(
+      { error: `El local está cerrado ahora mismo. ${estadoLocal.mensaje}.` },
       { status: 400 }
     )
   }

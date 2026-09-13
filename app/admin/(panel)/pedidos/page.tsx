@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { listarPedidosAdmin, type VistaPedidos } from "@/lib/data/pedidos-admin"
 import { OrderRow } from "@/components/admin/order-row"
+import { RealtimeRefresh } from "@/components/admin/realtime-refresh"
 import { cn } from "@/lib/utils"
 
 const TABS: { value: VistaPedidos; label: string }[] = [
@@ -22,6 +23,7 @@ export default async function AdminPedidosPage(props: PageProps<"/admin/pedidos"
 
   return (
     <div className="p-8">
+      <RealtimeRefresh />
       <div className="mb-6 border-b border-border pb-6">
         <span className="eyebrow">Gestión</span>
         <h1 className="mt-2.5 font-serif text-3xl">Pedidos</h1>
