@@ -139,7 +139,13 @@ export default async function AdminPedidoDetallePage(props: PageProps<"/admin/pe
                 <span className="font-mono">{formatCOP(pedido.subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Domicilio</span>
+                <span>
+                  {pedido.distancia_km != null
+                    ? `Domicilio (${pedido.distancia_km} km aprox.)`
+                    : pedido.zona_domicilio
+                      ? `Domicilio (${pedido.zona_domicilio})`
+                      : "Domicilio"}
+                </span>
                 <span className="font-mono">{formatCOP(pedido.costo_domicilio)}</span>
               </div>
               {pedido.propina > 0 ? (

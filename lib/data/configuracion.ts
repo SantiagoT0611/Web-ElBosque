@@ -18,6 +18,9 @@ export async function getConfiguracion() {
   return data
 }
 
+export type ZonaDomicilio = { nombre: string; recargo: number }
+export type TramoDomicilio = { hasta_km: number; recargo: number }
+
 export type ConfiguracionPublica = {
   nombreRestaurante: string
   direccion: string | null
@@ -25,6 +28,9 @@ export type ConfiguracionPublica = {
   horarioAtencion: Record<string, string>
   redesSociales: Record<string, string>
   costoDomicilioDefault: number
+  zonasDomicilio: ZonaDomicilio[]
+  tramosDomicilio: TramoDomicilio[]
+  calculoDistanciaDisponible: boolean
   banco: {
     nombre: string | null
     tipoCuenta: string | null
@@ -44,6 +50,12 @@ export async function getConfiguracionPublica(): Promise<ConfiguracionPublica> {
     horarioAtencion: (config.horario_atencion ?? {}) as Record<string, string>,
     redesSociales: (config.redes_sociales ?? {}) as Record<string, string>,
     costoDomicilioDefault: config.costo_domicilio_default,
+    zonasDomicilio: (config.zonas_domicilio ?? []) as ZonaDomicilio[],
+    tramosDomicilio: (config.tramos_domicilio ?? []) as TramoDomicilio[],
+    calculoDistanciaDisponible:
+      ((config.tramos_domicilio ?? []) as TramoDomicilio[]).length > 0 &&
+      config.latitud != null &&
+      config.longitud != null,
     banco: {
       nombre: config.banco_nombre,
       tipoCuenta: config.banco_tipo_cuenta,

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { siguientesEstadosPosibles, type EstadoPedido } from "@/lib/orders/state-machine"
 import type { PedidoCompleto } from "@/lib/data/pedidos"
+import { ComandaDialog } from "@/components/admin/comanda-dialog"
 
 const ACCION_LABEL: Record<EstadoPedido, string> = {
   pendiente: "Pendiente",
@@ -29,10 +30,23 @@ const ESTADO_NOMBRE: Record<EstadoPedido, string> = {
 export function PedidoAcciones({ pedido }: { pedido: PedidoCompleto }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [comandaAbierta, setComandaAbierta] = useState(false)
+  const esperandoComanda = useRef(false)
 
   const siguientes = siguientesEstadosPosibles(pedido.estado_pedido, pedido.tipo_entrega)
   const bloqueadoPorPago =
     pedido.metodo_pago === "transferencia" && pedido.estado_pago !== "confirmado"
+  const yaConfirmado = pedido.estado_pedido !== "pendiente" && pedido.estado_pedido !== "cancelado"
+
+  // Al confirmar, la respuesta del PATCH no trae detalle_pedido — se espera
+  // a que router.refresh() traiga el `pedido` completo (prop nuevo) antes de
+  // abrir la comanda, en vez de armarla con datos incompletos.
+  useEffect(() => {
+    if (esperandoComanda.current && pedido.estado_pedido === "confirmado") {
+      esperandoComanda.current = false
+      setComandaAbierta(true)
+    }
+  }, [pedido.estado_pedido])
 
   async function cambiarEstado(estado: EstadoPedido) {
     setLoading(estado)
@@ -45,6 +59,7 @@ export function PedidoAcciones({ pedido }: { pedido: PedidoCompleto }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "No se pudo cambiar el estado.")
       toast.success(`Pedido actualizado a "${ESTADO_NOMBRE[estado]}".`)
+      if (estado === "confirmado") esperandoComanda.current = true
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ocurrió un error.")
@@ -74,6 +89,17 @@ export function PedidoAcciones({ pedido }: { pedido: PedidoCompleto }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {yaConfirmado ? (
+        <button
+          type="button"
+          onClick={() => setComandaAbierta(true)}
+          className="self-start border border-border px-4 py-2.5 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:border-primary hover:text-primary"
+        >
+          Reimprimir comanda
+        </button>
+      ) : null}
+      <ComandaDialog pedido={pedido} open={comandaAbierta} onOpenChange={setComandaAbierta} />
+
       {pedido.metodo_pago === "transferencia" && pedido.estado_pago !== "confirmado" ? (
         <div className="border border-primary/30 bg-card p-5">
           <div className="mb-3 font-mono text-[10px] tracking-[0.2em] text-primary uppercase">

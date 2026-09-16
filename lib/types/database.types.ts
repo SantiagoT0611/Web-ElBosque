@@ -125,11 +125,15 @@ export type Database = {
           fotos_panoramicas: string[]
           horario_atencion: Json
           id: number
+          latitud: number | null
+          longitud: number | null
           nombre_restaurante: string
           qr_transferencia_url: string | null
           redes_sociales: Json
           telefono: string | null
+          tramos_domicilio: Json
           updated_at: string
+          zonas_domicilio: Json
         }
         Insert: {
           banco_documento?: string | null
@@ -142,11 +146,15 @@ export type Database = {
           fotos_panoramicas?: string[]
           horario_atencion?: Json
           id?: number
+          latitud?: number | null
+          longitud?: number | null
           nombre_restaurante?: string
           qr_transferencia_url?: string | null
           redes_sociales?: Json
           telefono?: string | null
+          tramos_domicilio?: Json
           updated_at?: string
+          zonas_domicilio?: Json
         }
         Update: {
           banco_documento?: string | null
@@ -159,11 +167,15 @@ export type Database = {
           fotos_panoramicas?: string[]
           horario_atencion?: Json
           id?: number
+          latitud?: number | null
+          longitud?: number | null
           nombre_restaurante?: string
           qr_transferencia_url?: string | null
           redes_sociales?: Json
           telefono?: string | null
+          tramos_domicilio?: Json
           updated_at?: string
+          zonas_domicilio?: Json
         }
         Relationships: []
       }
@@ -307,6 +319,8 @@ export type Database = {
           cliente_barrio: string | null
           cliente_direccion: string | null
           cliente_email: string | null
+          cliente_lat: number | null
+          cliente_lng: number | null
           cliente_nombre: string
           cliente_notas: string | null
           cliente_referencia: string | null
@@ -314,6 +328,7 @@ export type Database = {
           codigo_seguimiento: string
           costo_domicilio: number
           created_at: string
+          distancia_km: number | null
           efectivo_paga_con: number | null
           estado_pago: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido: Database["public"]["Enums"]["estado_pedido_enum"]
@@ -325,11 +340,14 @@ export type Database = {
           tipo_entrega: Database["public"]["Enums"]["tipo_entrega_enum"]
           total: number
           updated_at: string
+          zona_domicilio: string | null
         }
         Insert: {
           cliente_barrio?: string | null
           cliente_direccion?: string | null
           cliente_email?: string | null
+          cliente_lat?: number | null
+          cliente_lng?: number | null
           cliente_nombre: string
           cliente_notas?: string | null
           cliente_referencia?: string | null
@@ -337,6 +355,7 @@ export type Database = {
           codigo_seguimiento?: string
           costo_domicilio?: number
           created_at?: string
+          distancia_km?: number | null
           efectivo_paga_con?: number | null
           estado_pago: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido?: Database["public"]["Enums"]["estado_pedido_enum"]
@@ -348,11 +367,14 @@ export type Database = {
           tipo_entrega: Database["public"]["Enums"]["tipo_entrega_enum"]
           total: number
           updated_at?: string
+          zona_domicilio?: string | null
         }
         Update: {
           cliente_barrio?: string | null
           cliente_direccion?: string | null
           cliente_email?: string | null
+          cliente_lat?: number | null
+          cliente_lng?: number | null
           cliente_nombre?: string
           cliente_notas?: string | null
           cliente_referencia?: string | null
@@ -360,6 +382,7 @@ export type Database = {
           codigo_seguimiento?: string
           costo_domicilio?: number
           created_at?: string
+          distancia_km?: number | null
           efectivo_paga_con?: number | null
           estado_pago?: Database["public"]["Enums"]["estado_pago_enum"]
           estado_pedido?: Database["public"]["Enums"]["estado_pedido_enum"]
@@ -371,6 +394,7 @@ export type Database = {
           tipo_entrega?: Database["public"]["Enums"]["tipo_entrega_enum"]
           total?: number
           updated_at?: string
+          zona_domicilio?: string | null
         }
         Relationships: []
       }

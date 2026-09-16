@@ -99,7 +99,15 @@ export async function PedidoResumen({ pedido }: { pedido: PedidoCompleto }) {
             <span className="font-mono">{formatCOP(pedido.subtotal)}</span>
           </div>
           <div className="flex justify-between">
-            <span>{pedido.tipo_entrega === "domicilio" ? "Domicilio" : "Recoges en tienda"}</span>
+            <span>
+              {pedido.tipo_entrega === "domicilio"
+                ? pedido.distancia_km != null
+                  ? `Domicilio (${pedido.distancia_km} km aprox.)`
+                  : pedido.zona_domicilio
+                    ? `Domicilio (${pedido.zona_domicilio})`
+                    : "Domicilio"
+                : "Recoges en tienda"}
+            </span>
             <span className="font-mono">
               {pedido.tipo_entrega === "domicilio" ? formatCOP(pedido.costo_domicilio) : "Sin costo"}
             </span>

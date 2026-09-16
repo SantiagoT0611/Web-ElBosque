@@ -115,6 +115,23 @@
   }
 }
 
+/* Comanda de cocina: al imprimir, solo se ve el ticket (#comanda-imprimible),
+   sin importar dónde esté montado en el árbol (diálogo, overlay, sidebar). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #comanda-imprimible,
+  #comanda-imprimible * {
+    visibility: visible;
+  }
+  #comanda-imprimible {
+    position: fixed;
+    inset: 0;
+    padding: 16px;
+  }
+}
+
 @layer utilities {
   .bg-stripe-placeholder {
     background-image: repeating-linear-gradient(

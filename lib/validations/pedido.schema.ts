@@ -22,6 +22,9 @@ const baseCheckoutSchema = z.object({
   cliente_direccion: z.string().trim().max(200).optional().or(z.literal("")),
   cliente_barrio: z.string().trim().max(80).optional().or(z.literal("")),
   cliente_referencia: z.string().trim().max(200).optional().or(z.literal("")),
+  zona_domicilio: z.string().trim().min(1).optional(),
+  cliente_lat: z.number().min(-90).max(90).optional(),
+  cliente_lng: z.number().min(-180).max(180).optional(),
   metodo_pago: z.enum(["efectivo", "transferencia"]),
   efectivo_paga_con: z.number().int().positive().optional(),
   quiere_propina: z.boolean().optional(),
@@ -46,7 +49,7 @@ function requiereMontoEfectivo(
     ctx.addIssue({
       code: "custom",
       path: ["efectivo_paga_con"],
-      message: "Selecciona con qué billete vas a pagar.",
+      message: "Indica con cuánto vas a pagar en efectivo.",
     })
   }
 }

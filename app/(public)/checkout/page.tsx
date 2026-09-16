@@ -28,6 +28,19 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false)
   const [configuracion, setConfiguracion] = useState<ConfiguracionPublica | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [pagoExacto, setPagoExacto] = useState(false)
+  const [estimacion, setEstimacion] = useState<{
+    distanciaKm: number
+    costoDomicilio: number
+    lat: number
+    lng: number
+  } | null>(null)
+  const [estimando, setEstimando] = useState(false)
+  const [calculoFallido, setCalculoFallido] = useState(false)
+  const [ubicacionCompartida, setUbicacionCompartida] = useState<{ lat: number; lng: number } | null>(
+    null
+  )
+  const [solicitandoUbicacion, setSolicitandoUbicacion] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -48,6 +61,7 @@ export default function CheckoutPage() {
       cliente_direccion: "",
       cliente_barrio: "",
       cliente_referencia: "",
+      zona_domicilio: undefined,
       metodo_pago: "efectivo",
     },
   })
@@ -61,17 +75,117 @@ export default function CheckoutPage() {
   const metodoPago = form.watch("metodo_pago")
   const efectivoPagaCon = form.watch("efectivo_paga_con")
   const quierePropina = form.watch("quiere_propina")
+  const zonaDomicilio = form.watch("zona_domicilio")
+  const clienteDireccion = form.watch("cliente_direccion")
   const esDomicilio = tipoEntrega === "domicilio"
   const esEfectivo = metodoPago === "efectivo"
   const lines = cartLines(items)
   const subtotal = cartSubtotal(items)
-  const costoDomicilio = configuracion?.costoDomicilioDefault ?? 0
+  const zonasDomicilio = configuracion?.zonasDomicilio ?? []
+  const calculoAutomaticoDisponible = Boolean(configuracion?.calculoDistanciaDisponible)
+  // El selector manual de zona es el mecanismo único cuando el admin nunca
+  // configuró el cálculo automático, y el respaldo cuando sí lo configuró
+  // pero falló para esta dirección en particular.
+  const mostrarSelectorZona =
+    esDomicilio && zonasDomicilio.length > 0 && (!calculoAutomaticoDisponible || calculoFallido)
+  const recargoZona = zonasDomicilio.find((z) => z.nombre === zonaDomicilio)?.recargo ?? 0
+  const costoDomicilio = estimacion
+    ? estimacion.costoDomicilio
+    : (configuracion?.costoDomicilioDefault ?? 0) + (mostrarSelectorZona && zonaDomicilio ? recargoZona : 0)
   const propina = quierePropina ? Math.round(subtotal * 0.1) : 0
   const total = subtotal + (esDomicilio ? costoDomicilio : 0) + propina
   const estadoLocal = configuracion ? getEstadoLocal(configuracion.horarioAtencion) : null
+  const faltaZona = mostrarSelectorZona && !zonaDomicilio
+  const faltaEfectivo = esEfectivo && !pagoExacto && (!efectivoPagaCon || efectivoPagaCon < total)
+  // Cálculo automático activo, todavía sin resultado y todavía sin haber
+  // fallado (esperando el debounce o la respuesta del preview): bloquea el
+  // submit para no crear un pedido con un costo de domicilio adivinado.
+  const faltaEstimacion = esDomicilio && calculoAutomaticoDisponible && !estimacion && !mostrarSelectorZona
+
+  useEffect(() => {
+    if (pagoExacto) {
+      form.setValue("efectivo_paga_con", total, { shouldValidate: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagoExacto, total])
+
+  async function estimarDomicilio(body: { cliente_direccion?: string; lat?: number; lng?: number }) {
+    setEstimando(true)
+    try {
+      const res = await fetch("/api/pedidos/estimar-domicilio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (data.disponible) {
+        setEstimacion({
+          distanciaKm: data.distancia_km,
+          costoDomicilio: data.costo_domicilio,
+          lat: data.lat,
+          lng: data.lng,
+        })
+        setCalculoFallido(false)
+      } else {
+        setEstimacion(null)
+        setCalculoFallido(true)
+      }
+    } catch {
+      setEstimacion(null)
+      setCalculoFallido(true)
+    } finally {
+      setEstimando(false)
+    }
+  }
+
+  // Prioridad: ubicación compartida (más precisa) > dirección escrita
+  // (debounced). Nunca se muestra el selector de zona mientras aún se está
+  // calculando — solo tras confirmar que el cálculo automático falló.
+  useEffect(() => {
+    if (!esDomicilio || !calculoAutomaticoDisponible) {
+      setEstimacion(null)
+      setCalculoFallido(false)
+      return
+    }
+    if (ubicacionCompartida) {
+      estimarDomicilio({ lat: ubicacionCompartida.lat, lng: ubicacionCompartida.lng })
+      return
+    }
+    if (!clienteDireccion || clienteDireccion.trim().length < 5) {
+      setEstimacion(null)
+      setCalculoFallido(false)
+      return
+    }
+    const timer = setTimeout(() => {
+      estimarDomicilio({ cliente_direccion: clienteDireccion })
+    }, 700)
+    return () => clearTimeout(timer)
+  }, [esDomicilio, calculoAutomaticoDisponible, clienteDireccion, ubicacionCompartida])
+
+  function compartirUbicacion() {
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta compartir ubicación.")
+      return
+    }
+    setSolicitandoUbicacion(true)
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        setUbicacionCompartida({ lat: posicion.coords.latitude, lng: posicion.coords.longitude })
+        setSolicitandoUbicacion(false)
+      },
+      () => {
+        setSolicitandoUbicacion(false)
+        toast.error("No pudimos acceder a tu ubicación. Seguimos calculando por tu dirección.")
+      }
+    )
+  }
 
   function elegirTipoEntrega(tipo: "domicilio" | "recoger") {
     form.setValue("tipo_entrega", tipo, { shouldValidate: true })
+    if (tipo === "recoger") {
+      form.setValue("zona_domicilio", undefined, { shouldValidate: true })
+      setUbicacionCompartida(null)
+    }
     setTipoEntregaStore(tipo)
   }
 
@@ -79,6 +193,7 @@ export default function CheckoutPage() {
     form.setValue("metodo_pago", metodo, { shouldValidate: true })
     if (metodo === "transferencia") {
       form.setValue("efectivo_paga_con", undefined, { shouldValidate: true })
+      setPagoExacto(false)
     }
   }
 
@@ -88,6 +203,9 @@ export default function CheckoutPage() {
     try {
       const payload = {
         ...values,
+        zona_domicilio: mostrarSelectorZona ? values.zona_domicilio : undefined,
+        cliente_lat: esDomicilio && !mostrarSelectorZona ? estimacion?.lat : undefined,
+        cliente_lng: esDomicilio && !mostrarSelectorZona ? estimacion?.lng : undefined,
         items: lines.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad })),
       }
       const res = await fetch("/api/pedidos", {
@@ -227,6 +345,62 @@ export default function CheckoutPage() {
                 <Label htmlFor="cliente_barrio">Barrio</Label>
                 <Input id="cliente_barrio" placeholder="Chapinero" {...form.register("cliente_barrio")} />
               </div>
+
+              {calculoAutomaticoDisponible ? (
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={compartirUbicacion}
+                    disabled={solicitandoUbicacion}
+                    className="self-start border border-border px-4 py-2.5 font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                  >
+                    {solicitandoUbicacion
+                      ? "Obteniendo ubicación..."
+                      : ubicacionCompartida
+                        ? "📍 Ubicación compartida"
+                        : "📍 Compartir mi ubicación (más preciso)"}
+                  </button>
+                  {estimando ? (
+                    <p className="text-xs text-muted-foreground">Calculando distancia...</p>
+                  ) : estimacion ? (
+                    <p className="text-xs text-primary">
+                      Aprox. {estimacion.distanciaKm} km desde el local — costo de domicilio
+                      estimado.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {mostrarSelectorZona ? (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="zona_domicilio">Zona de domicilio</Label>
+                  {calculoAutomaticoDisponible ? (
+                    <p className="text-xs text-muted-foreground">
+                      No pudimos calcular la distancia automáticamente. Elige tu zona:
+                    </p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {zonasDomicilio.map((zona) => (
+                      <button
+                        key={zona.nombre}
+                        type="button"
+                        onClick={() =>
+                          form.setValue("zona_domicilio", zona.nombre, { shouldValidate: true })
+                        }
+                        className={
+                          "px-3 py-2 text-left text-xs transition-colors " +
+                          (zonaDomicilio === zona.nombre
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border text-muted-foreground")
+                        }
+                      >
+                        {zona.nombre}
+                        {zona.recargo > 0 ? ` · +${formatCOP(zona.recargo)}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="cliente_referencia">Referencia</Label>
                 <Input
@@ -272,39 +446,77 @@ export default function CheckoutPage() {
           </div>
 
           {esEfectivo ? (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="efectivo_paga_con">¿Con qué billete vas a pagar?</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {DENOMINACIONES.map((denom) => {
-                  const disabled = denom < total
-                  return (
+            <div className="flex flex-col gap-2.5">
+              <Label htmlFor="efectivo_paga_con">¿Con cuánto vas a pagar?</Label>
+
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={pagoExacto}
+                  onChange={(e) => {
+                    const exacto = e.target.checked
+                    setPagoExacto(exacto)
+                    if (!exacto) form.setValue("efectivo_paga_con", undefined, { shouldValidate: true })
+                  }}
+                  className="size-4"
+                />
+                Tengo el valor exacto, no necesito que me devuelvan nada
+              </label>
+
+              {!pagoExacto ? (
+                <>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DENOMINACIONES.map((denom) => (
+                      <button
+                        key={denom}
+                        type="button"
+                        onClick={() => {
+                          const actual = form.getValues("efectivo_paga_con") ?? 0
+                          form.setValue("efectivo_paga_con", actual + denom, { shouldValidate: true })
+                        }}
+                        className="border border-border p-3 text-center font-mono text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                      >
+                        + {formatCOP(denom)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Input
+                      id="efectivo_paga_con"
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="Total con el que pagas"
+                      value={efectivoPagaCon ?? ""}
+                      onChange={(e) => {
+                        const valor = e.target.value === "" ? undefined : Number(e.target.value)
+                        form.setValue("efectivo_paga_con", valor, { shouldValidate: true })
+                      }}
+                      className="flex-1"
+                    />
                     <button
-                      key={denom}
                       type="button"
-                      disabled={disabled}
-                      onClick={() =>
-                        form.setValue("efectivo_paga_con", denom, { shouldValidate: true })
-                      }
-                      className={
-                        "p-3 text-center font-mono text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-30 " +
-                        (efectivoPagaCon === denom
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border text-muted-foreground")
-                      }
+                      onClick={() => form.setValue("efectivo_paga_con", undefined, { shouldValidate: true })}
+                      className="font-mono text-[11px] tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:text-destructive"
                     >
-                      {formatCOP(denom)}
+                      Limpiar
                     </button>
-                  )
-                })}
-              </div>
+                  </div>
+                </>
+              ) : null}
+
               {form.formState.errors.efectivo_paga_con ? (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.efectivo_paga_con.message}
                 </p>
-              ) : null}
-              {efectivoPagaCon && efectivoPagaCon >= total ? (
+              ) : pagoExacto ? (
+                <p className="text-xs text-primary">Pagas el valor exacto, sin vueltas.</p>
+              ) : efectivoPagaCon && efectivoPagaCon >= total ? (
                 <p className="text-xs text-primary">
                   Te devolvemos {formatCOP(efectivoPagaCon - total)}
+                </p>
+              ) : efectivoPagaCon ? (
+                <p className="text-xs text-destructive">
+                  Aún te faltan {formatCOP(total - efectivoPagaCon)} para cubrir el total.
                 </p>
               ) : null}
             </div>
@@ -341,7 +553,15 @@ export default function CheckoutPage() {
               <span className="font-mono">{formatCOP(subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span>{esDomicilio ? "Envío a domicilio" : "Recoges en tienda"}</span>
+              <span>
+                {esDomicilio
+                  ? estimacion
+                    ? `Envío a domicilio (${estimacion.distanciaKm} km aprox.)`
+                    : zonaDomicilio
+                      ? `Envío a domicilio (${zonaDomicilio})`
+                      : "Envío a domicilio"
+                  : "Recoges en tienda"}
+              </span>
               <span className="font-mono">{esDomicilio ? formatCOP(costoDomicilio) : "Sin costo"}</span>
             </div>
             <label className="flex cursor-pointer items-center justify-between gap-3 pt-1">
@@ -361,9 +581,30 @@ export default function CheckoutPage() {
               El local está cerrado ahora mismo. {estadoLocal.mensaje}.
             </p>
           ) : null}
+          {faltaZona ? (
+            <p className="text-center text-xs text-destructive">Selecciona tu zona de domicilio.</p>
+          ) : null}
+          {faltaEstimacion ? (
+            <p className="text-center text-xs text-destructive">
+              {clienteDireccion && clienteDireccion.trim().length >= 5
+                ? "Calculando el costo de domicilio..."
+                : "Escribe tu dirección para calcular el costo de domicilio."}
+            </p>
+          ) : null}
+          {faltaEfectivo && !efectivoPagaCon ? (
+            <p className="text-center text-xs text-destructive">
+              Indica con cuánto vas a pagar en efectivo.
+            </p>
+          ) : null}
           <button
             type="submit"
-            disabled={submitting || !!(estadoLocal && !estadoLocal.abierto)}
+            disabled={
+              submitting ||
+              !!(estadoLocal && !estadoLocal.abierto) ||
+              faltaZona ||
+              faltaEfectivo ||
+              faltaEstimacion
+            }
             className="bg-primary p-4 text-center font-display text-xs font-bold tracking-[0.12em] uppercase text-primary-foreground transition-colors hover:bg-gold-light disabled:opacity-50"
           >
             {submitting ? "Enviando..." : "Confirmar pedido"}
